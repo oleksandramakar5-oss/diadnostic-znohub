@@ -499,23 +499,27 @@
             return b.duration - a.duration;
         });
 
-        let globalGrandTotal = 0;
+        let exactGrandTotal = 0;
 
-        // 1. Рахуємо точні суми для кожного предмета без проміжного округлення, 
-        // і лише в кінці округлюємо кожен предмет вниз до десятків
+        // 1. Рахуємо точні суми для предметів БЕЗ проміжного округлення
         selectedSubjects.forEach((subject, index) => {
             const monthlyPrice = pricing[subject.tariff][index];
-            const exactTotal = monthlyPrice * subject.duration * discountMultiplier;
-            const subjectTotal = Math.floor(exactTotal / 10) * 10;
+            const exactSubjectTotal = monthlyPrice * subject.duration * discountMultiplier;
             
-            subject.totalPrice = subjectTotal;
+            subject.exactPrice = exactSubjectTotal;
+            // Для відображення на екрані поки що показуємо точне значення з двома знаками або округлене за стандартною математикою
+            const displayPrice = Math.round(exactSubjectTotal);
+            subject.totalPrice = displayPrice;
 
             const durFormatted = subject.duration.toFixed(3);
             document.getElementById(`dur-${subject.id}`).innerText = `Тривалість: ${durFormatted} міс.`;
-            document.getElementById(`total-${subject.id}`).innerText = subjectTotal.toLocaleString('uk-UA') + ' ₴';
+            document.getElementById(`total-${subject.id}`).innerText = displayPrice.toLocaleString('uk-UA') + ' ₴';
             
-            globalGrandTotal += subjectTotal;
+            exactGrandTotal += exactSubjectTotal;
         });
+
+        // 2. І тільки в самому кінці округлюємо загальну суму вниз до десятків!
+        const globalGrandTotal = Math.floor(exactGrandTotal / 10) * 10;
 
         document.getElementById('grandTotalText').innerText = globalGrandTotal.toLocaleString('uk-UA');
         
