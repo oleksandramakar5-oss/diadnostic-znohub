@@ -185,7 +185,7 @@
         </label>
         <label class="option-toggle">
             <input type="checkbox" id="ubd-discount" onchange="calculate()">
-            <span>Знижка УБД (додаткова знижка 10%)</span>
+            <span>Знижка УБД (знижка 10%)</span>
         </label>
     </div>
 
@@ -385,11 +385,6 @@
         lit: 'Укр. література'
     };
 
-    // ==========================================
-    // БАЗА ПОСИЛАНЬ НА ОПЛАТУ ЧАСТИНАМИ ЗА ТОЧНОЮ СУМОЮ ЗАМОВЛЕННЯ
-    // Приклад додано для 32 430 ₴. Далі можеш додавати інші суми за аналогією:
-    // '32430': 'https://...',
-    // ==========================================
     const bankInstallmentLinks = {
         '32430': 'https://secure.wayforpay.com/button/b60ebfbfc5c0f'
     };
@@ -469,14 +464,15 @@
         const isFullPayment = document.getElementById('full-payment').checked;
         const isUbd = document.getElementById('ubd-discount').checked;
 
+        // Послідовне застосування знижок: якщо обрано обидві, кожна дає -10% від попередньої суми (0.9 * 0.9 = 0.81)
         let discountMultiplier = 1.0;
         let discountTextList = [];
         if (isFullPayment) {
-            discountMultiplier -= 0.10;
+            discountMultiplier *= 0.90;
             discountTextList.push('Повна оплата / Суперінтенсив (-10%)');
         }
         if (isUbd) {
-            discountMultiplier -= 0.10;
+            discountMultiplier *= 0.90;
             discountTextList.push('Знижка УБД (-10%)');
         }
 
@@ -535,7 +531,6 @@
         if (selectedSubjects.length >= 3) {
             const monthlyPayment = Math.round(globalGrandTotal / 5 / 10) * 10;
             
-            // Шукаємо посилання за точним значенням загальної суми
             const linkKey = globalGrandTotal.toString();
             const rawLink = bankInstallmentLinks[linkKey] || '';
 
