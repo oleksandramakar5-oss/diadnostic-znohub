@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Розрахунок вартості для діагностів</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #e0e7ff;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --accent: #10b981;
+        }
+        body { 
+            font-family: 'Inter', system-ui, sans-serif; 
+            background: var(--bg); 
+            color: var(--text-dark); 
+            padding: 2rem 1rem; 
+            margin: 0; 
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+        }
+        h2 { text-align: center; margin-top: 0; margin-bottom: 2rem; color: var(--text-dark); font-size: 1.8rem; }
+        
+        .subject-grid {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .subject-row {
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 2.5fr 1.8fr;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+        .grid-header {
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 2.5fr 1.8fr;
+            gap: 1rem;
+            padding: 0 1rem 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .subject-row.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-light);
+            background: #fafbfa;
+        }
+        
+        .col-name { display: flex; align-items: center; gap: 0.75rem; font-weight: 600; }
+        .col-name input[type="checkbox"] { width: 1.25rem; height: 1.25rem; accent-color: var(--primary); cursor: pointer; }
+        
+        select {
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #fff;
+            font-family: inherit;
+            color: var(--text-dark);
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+        select:disabled { background: #f1f5f9; cursor: not-allowed; opacity: 0.6; }
+
+        .total-display { display: flex; flex-direction: column; text-align: right; font-weight: 700; color: var(--text-dark); font-size: 1.15rem; }
+        .total-display small { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; margin-top: 2px; }
+
+        /* Блок налаштувань знижок */
+        .options-card {
+            background: #f1f5f9;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            border: 1px solid var(--border);
+        }
+        .option-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .option-toggle input { width: 1.2rem; height: 1.2rem; accent-color: var(--primary); cursor: pointer; }
+
+        /* Підсумок */
+        .summary-card {
+            background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+            padding: 2.5rem;
+            border-radius: 12px;
+            margin-top: 2rem;
+            text-align: center;
+            border: 1px solid #c7d2fe;
+            position: relative;
+        }
+        
+        .summary-title { color: #4338ca; font-weight: 700; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+        .grand-total { font-size: 3.5rem; font-weight: 800; color: var(--primary); line-height: 1.2; }
+
+        .installments-box {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px dashed #a5b4fc;
+            font-size: 1.15rem;
+            color: #3730a3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .bank-link-text {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #047857;
+            word-break: break-all;
+        }
+
+        .bank-link-missing {
+            color: #dc2626;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        /* Кнопка копіювання */
+        .copy-btn {
+            margin-top: 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .copy-btn:hover { background: #4338ca; }
+        .copy-success {
+            display: none;
+            margin-top: 0.5rem;
+            color: #059669;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .grid-header { display: none; }
+            .subject-row { grid-template-columns: 1fr; gap: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="calculator-container">
+    <h2>Розрахунок вартості (Для діагностів)</h2>
+
+    <!-- Блок вибору знижок / опцій -->
+    <div class="options-card">
+        <label class="option-toggle">
+            <input type="checkbox" id="full-payment" onchange="calculate()">
+            <span>Повна оплата / Суперінтенсив (знижка 10%)</span>
+        </label>
+        <label class="option-toggle">
+            <input type="checkbox" id="ubd-discount" onchange="calculate()">
+            <span>Знижка УБД (додаткова знижка 10%)</span>
+        </label>
+    </div>
+
+    <div class="grid-header">
+        <div>Предмет</div>
+        <div>Тариф</div>
+        <div>Дата старту потоку</div>
+        <div style="text-align: right;">Загалом</div>
+    </div>
+
+    <div class="subject-grid" id="subjectsContainer">
+        
+        <!-- Укр. мова -->
+        <div class="subject-row active" id="row-ukr">
+            <label class="col-name">
+                <input type="checkbox" id="check-ukr" onchange="toggleRow('ukr'); calculate();" checked>
+                <span>Українська мова</span>
+            </label>
+            <div>
+                <select id="tariff-ukr" onchange="calculate()">
+                    <option value="standard">Стандарт</option>
+                    <option value="premium">Преміум</option>
+                </select>
+            </div>
+            <div>
+                <select id="stream-ukr" onchange="calculate()"></select>
+            </div>
+            <div class="total-display">
+                <span id="total-ukr">0 ₴</span>
+                <small id="dur-ukr"></small>
+            </div>
+        </div>
+
+        <!-- Математика -->
+        <div class="subject-row active" id="row-math">
+            <label class="col-name">
+                <input type="checkbox" id="check-math" onchange="toggleRow('math'); calculate();" checked>
+                <span>Математика</span>
+            </label>
+            <div>
+                <select id="tariff-math" onchange="calculate()">
+                    <option value="standard">Стандарт</option>
+                    <option value="premium">Преміум</option>
+                </select>
+            </div>
+            <div>
+                <select id="stream-math" onchange="calculate()"></select>
+            </div>
+            <div class="total-display">
+                <span id="total-math">0 ₴</span>
+                <small id="dur-math"></small>
+            </div>
+        </div>
+
+        <!-- Історія -->
+        <div class="subject-row active" id="row-hist">
+            <label class="col-name">
+                <input type="checkbox" id="check-hist" onchange="toggleRow('hist'); calculate();" checked>
+                <span>Історія України</span>
+            </label>
+            <div>
+                <select id="tariff-hist" onchange="calculate()">
+                    <option value="standard">Стандарт</option>
+                    <option value="premium">Преміум</option>
+                </select>
+            </div>
+            <div>
+                <select id="stream-hist" onchange="calculate()"></select>
+            </div>
+            <div class="total-display">
+                <span id="total-hist">0 ₴</span>
+                <small id="dur-hist"></small>
+            </div>
+        </div>
+
+        <!-- На вибір -->
+        <div class="subject-row active" id="row-opt">
+            <label class="col-name" style="flex-wrap: wrap;">
+                <input type="checkbox" id="check-opt" onchange="toggleRow('opt'); calculate();" checked>
+                <select id="opt-subject-name" onchange="updateOptStreams(); calculate();">
+                    <option value="eng">Англійська мова</option>
+                    <option value="bio">Біологія</option>
+                    <option value="geo">Географія</option>
+                    <option value="lit">Укр. література</option>
+                </select>
+            </label>
+            <div>
+                <select id="tariff-opt" onchange="calculate()">
+                    <option value="standard">Стандарт</option>
+                    <option value="premium">Преміум</option>
+                </select>
+            </div>
+            <div>
+                <select id="stream-opt" onchange="calculate()"></select>
+            </div>
+            <div class="total-display">
+                <span id="total-opt">0 ₴</span>
+                <small id="dur-opt"></small>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-title">Загальна вартість навчання</div>
+        <div class="grand-total"><span id="grandTotalText">0</span> ₴</div>
+        <div id="installments-container" class="installments-box">
+            <!-- Тут виводиться розтермінування та посилання або текст -->
+        </div>
+        
+        <button class="copy-btn" onclick="copyToCRM()">Копіювати для CRM</button>
+        <div class="copy-success" id="copySuccessMsg">Скопійовано в буфер обміну!</div>
+    </div>
+</div>
+
+<script>
+    const pricing = {
+        standard: [990, 940, 890, 840],
+        premium: [1980, 1880, 1780, 1680]
+    };
+
+    const streamsDB = {
+        ukr: [
+            { date: '2026-09-02', label: '14 жовтня (D)', duration: 9.000 },
+            { date: '2026-09-13', label: '13 вересня (B)', duration: 8.667 },
+            { date: '2026-10-14', label: '14 жовтня (C)', duration: 7.625 },
+            { date: '2026-11-01', label: '1 листопада (D)', duration: 7.000 },
+            { date: '2026-12-02', label: '2 грудня (E)', duration: 6.000 },
+            { date: '2026-12-30', label: '30 грудня (F)', duration: 5.111 }
+        ],
+        math: [
+            { date: '2026-09-01', label: '1 вересня (А)', duration: 9.000 },
+            { date: '2026-09-18', label: '18 вересня (B)', duration: 8.444 },
+            { date: '2026-10-02', label: '2 жовтня (C)', duration: 8.000 },
+            { date: '2026-10-23', label: '23 жовтня (D)', duration: 7.333 },
+            { date: '2025-11-24', label: '24 листопада (E)', duration: 6.250 },
+            { date: '2026-12-25', label: '25 грудня (F)', duration: 5.222 }
+        ],
+        hist: [
+            { date: '2026-09-03', label: '3 вересня (A)', duration: 9.000 },
+            { date: '2026-09-10', label: '10 вересня (B)', duration: 8.750 },
+            { date: '2026-10-01', label: '1 жовтня (C)', duration: 8.000 },
+            { date: '2026-11-05', label: '5 листопада (D)', duration: 7.889 },
+            { date: '2026-12-03', label: '3 грудня (E)', duration: 6.000 },
+            { date: '2026-12-21', label: '21 грудня (F)', duration: 5.444 },
+            { date: '2027-01-07', label: '7 січня (G)', duration: 4.875 }
+        ],
+        lit: [
+            { date: '2026-09-02', label: '2 вересня (A)', duration: 9.000 },
+            { date: '2026-09-16', label: '16 вересня (B)', duration: 8.556 },
+            { date: '2026-10-14', label: '14 жовтня (C)', duration: 7.625 },
+            { date: '2026-11-08', label: '8 листопада (D)', duration: 6.778 },
+            { date: '2026-11-29', label: '29 листопада (E)', duration: 6.111 },
+            { date: '2026-12-16', label: '16 грудня (F)', duration: 5.556 },
+            { date: '2027-01-06', label: '6 січня (G)', duration: 4.889 }
+        ],
+        bio: [
+            { date: '2026-09-04', label: '4 вересня (A)', duration: 9.000 },
+            { date: '2026-09-14', label: '14 вересня (B)', duration: 8.625 },
+            { date: '2026-10-19', label: '19 жовтня (C)', duration: 7.444 },
+            { date: '2026-11-13', label: '13 листопада (D)', duration: 6.667 },
+            { date: '2026-12-04', label: '4 грудня (E)', duration: 6.000 },
+            { date: '2026-12-14', label: '14 грудня (F)', duration: 5.625 },
+            { date: '2027-01-15', label: '15 січня (G)', duration: 4.556 }
+        ],
+        geo: [
+            { date: '2026-09-03', label: '3 вересня (A)', duration: 9.000 },
+            { date: '2026-09-21', label: '21 вересня (B)', duration: 8.375 },
+            { date: '2026-10-19', label: '19 жовтня (C)', duration: 7.444 },
+            { date: '2026-11-16', label: '16 листопада (D)', duration: 6.556 },
+            { date: '2026-12-14', label: '14 грудня (E)', duration: 5.667 },
+            { date: '2026-12-28', label: '28 грудня (F)', duration: 5.222 },
+            { date: '2027-01-14', label: '14 січня (G)', duration: 4.625 }
+        ],
+        eng: [
+            { date: '2026-09-02', label: '2 вересня (A)', duration: 9.000 },
+            { date: '2026-09-16', label: '16 вересня (B)', duration: 8.556 },
+            { date: '2026-09-27', label: '27 вересня (D)', duration: 8.222 },
+            { date: '2026-10-25', label: '25 жовтня (E)', duration: 7.250 },
+            { date: '2026-11-11', label: '11 листопада (F)', duration: 6.667 },
+            { date: '2026-11-22', label: '22 листопада (G)', duration: 6.333 },
+            { date: '2026-12-09', label: '9 грудня (H)', duration: 5.778 },
+            { date: '2026-12-20', label: '20 грудня (I)', duration: 5.444 },
+            { date: '2026-12-30', label: '30 грудня (J)', duration: 5.111 },
+            { date: '2027-01-10', label: '10 січня (K)', duration: 4.778 },
+            { date: '2027-01-20', label: '20 січня (L)', duration: 4.444 }
+        ]
+    };
+
+    const subjectNamesMap = {
+        ukr: 'Українська мова',
+        math: 'Математика',
+        hist: 'Історія України',
+        eng: 'Англійська мова',
+        bio: 'Біологія',
+        geo: 'Географія',
+        lit: 'Укр. література'
+    };
+
+    // ==========================================
+    // БАЗА ПОСИЛАНЬ НА ОПЛАТУ ЧАСТИНАМИ ЗА ТОЧНОЮ СУМОЮ ЗАМОВЛЕННЯ
+    // Приклад додано для 32 430 ₴. Далі можеш додавати інші суми за аналогією:
+    // '32430': 'https://...',
+    // ==========================================
+    const bankInstallmentLinks = {
+        '32430': 'https://secure.wayforpay.com/button/b60ebfbfc5c0f'
+    };
+
+    function getDefaultActiveIndex(streams) {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        let activeIdx = 0;
+
+        for (let i = 0; i < streams.length; i++) {
+            const streamDate = new Date(streams[i].date);
+            streamDate.setHours(0, 0, 0, 0);
+            const diffDays = Math.ceil((streamDate - now) / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 0) {
+                if (diffDays <= 7) {
+                    activeIdx = i;
+                } else if (i > 0) {
+                    activeIdx = i - 1;
+                }
+                break;
+            } else {
+                activeIdx = i;
+            }
+        }
+        return activeIdx;
+    }
+
+    function populateStreamSelect(subjectKey, selectElementId) {
+        const select = document.getElementById(selectElementId);
+        const streams = streamsDB[subjectKey];
+        const defaultIdx = getDefaultActiveIndex(streams);
+
+        select.innerHTML = '';
+        streams.forEach((stream, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.innerText = stream.label;
+            if (index === defaultIdx) {
+                opt.selected = true;
+            }
+            select.appendChild(opt);
+        });
+    }
+
+    function updateOptStreams() {
+        const subj = document.getElementById('opt-subject-name').value;
+        populateStreamSelect(subj, 'stream-opt');
+        calculate();
+    }
+
+    function toggleRow(id) {
+        const isChecked = document.getElementById(`check-${id}`).checked;
+        const row = document.getElementById(`row-${id}`);
+        
+        document.getElementById(`tariff-${id}`).disabled = !isChecked;
+        document.getElementById(`stream-${id}`).disabled = !isChecked;
+        if (id === 'opt') {
+            document.getElementById('opt-subject-name').disabled = !isChecked;
+        }
+        
+        if (isChecked) {
+            row.classList.add('active');
+        } else {
+            row.classList.remove('active');
+            document.getElementById(`total-${id}`).innerText = '0 ₴';
+            document.getElementById(`dur-${id}`).innerText = '';
+        }
+    }
+
+    let lastCalculatedData = null;
+
+    function calculate() {
+        const allIds = ['ukr', 'math', 'hist', 'opt'];
+        let selectedSubjects = [];
+
+        const isFullPayment = document.getElementById('full-payment').checked;
+        const isUbd = document.getElementById('ubd-discount').checked;
+
+        let discountMultiplier = 1.0;
+        let discountTextList = [];
+        if (isFullPayment) {
+            discountMultiplier -= 0.10;
+            discountTextList.push('Повна оплата / Суперінтенсив (-10%)');
+        }
+        if (isUbd) {
+            discountMultiplier -= 0.10;
+            discountTextList.push('Знижка УБД (-10%)');
+        }
+
+        allIds.forEach(id => {
+            if (document.getElementById(`check-${id}`).checked) {
+                const tariff = document.getElementById(`tariff-${id}`).value;
+                let subjKey = id;
+                if (id === 'opt') {
+                    subjKey = document.getElementById('opt-subject-name').value;
+                }
+                
+                const selectEl = document.getElementById(`stream-${id}`);
+                const streamIndex = selectEl.value;
+                const stream = streamsDB[subjKey][streamIndex];
+                const subjName = subjectNamesMap[subjKey];
+
+                selectedSubjects.push({ id, subjKey, subjName, tariff, duration: stream.duration, streamLabel: stream.label });
+            }
+        });
+
+        selectedSubjects.sort((a, b) => {
+            if (a.tariff === 'premium' && b.tariff !== 'premium') return -1;
+            if (a.tariff !== 'premium' && b.tariff === 'premium') return 1;
+            return b.duration - a.duration;
+        });
+
+        let globalGrandTotal = 0;
+
+        selectedSubjects.forEach((subject, index) => {
+            const monthlyPrice = pricing[subject.tariff][index];
+            const exactTotal = monthlyPrice * subject.duration * discountMultiplier;
+            const subjectTotal = Math.floor(exactTotal / 10) * 10;
+            
+            subject.totalPrice = subjectTotal;
+
+            const durFormatted = subject.duration.toFixed(3);
+            document.getElementById(`dur-${subject.id}`).innerText = `Тривалість: ${durFormatted} міс.`;
+            document.getElementById(`total-${subject.id}`).innerText = subjectTotal.toLocaleString('uk-UA') + ' ₴';
+            
+            globalGrandTotal += subjectTotal;
+        });
+
+        document.getElementById('grandTotalText').innerText = globalGrandTotal.toLocaleString('uk-UA');
+        
+        allIds.forEach(id => {
+            if (!document.getElementById(`check-${id}`).checked) {
+                document.getElementById(`total-${id}`).innerText = '0 ₴';
+                document.getElementById(`dur-${id}`).innerText = '';
+            }
+        });
+
+        const installmentsContainer = document.getElementById('installments-container');
+        let installmentInfoText = '';
+        let installmentLinkHtml = '';
+
+        if (selectedSubjects.length >= 3) {
+            const monthlyPayment = Math.round(globalGrandTotal / 5 / 10) * 10;
+            
+            // Шукаємо посилання за точним значенням загальної суми
+            const linkKey = globalGrandTotal.toString();
+            const rawLink = bankInstallmentLinks[linkKey] || '';
+
+            installmentInfoText = `При оплаті частинами на 5 платежів: <strong>${monthlyPayment.toLocaleString('uk-UA')} ₴ / міс</strong>`;
+            
+            if (rawLink && rawLink.trim() !== '') {
+                installmentLinkHtml = `<span class="bank-link-text">Посилання: ${rawLink}</span>`;
+            } else {
+                installmentLinkHtml = `<span class="bank-link-missing">⚠️ Треба просити в каті</span>`;
+            }
+
+            installmentsContainer.innerHTML = `${installmentInfoText}<br>${installmentLinkHtml}`;
+            installmentsContainer.style.color = '#3730a3';
+        } else {
+            installmentsContainer.innerHTML = `Розтермінування доступне від 3 предметів`;
+            installmentsContainer.style.color = 'var(--text-muted)';
+        }
+
+        const linkKeyForData = globalGrandTotal.toString();
+        lastCalculatedData = {
+            subjects: selectedSubjects,
+            total: globalGrandTotal,
+            discounts: discountTextList,
+            installmentPayment: selectedSubjects.length >= 3 ? Math.round(globalGrandTotal / 5 / 10) * 10 : null,
+            installmentLink: selectedSubjects.length >= 3 ? (bankInstallmentLinks[linkKeyForData] || 'Треба просити в каті') : null
+        };
+    }
+
+    function copyToCRM() {
+        if (!lastCalculatedData || lastCalculatedData.subjects.length === 0) {
+            alert('Немає обраних предметів для копіювання!');
+            return;
+        }
+
+        let text = `📦 Вибрані предмети та потоки:\n`;
+        lastCalculatedData.subjects.forEach(s => {
+            const tariffName = s.tariff === 'premium' ? 'Преміум' : 'Стандарт';
+            text += `• ${s.subjName} (${tariffName}) — старт: ${s.streamLabel}, тривалість: ${s.duration.toFixed(3)} міс. — ${s.totalPrice.toLocaleString('uk-UA')} ₴\n`;
+        });
+
+        if (lastCalculatedData.discounts.length > 0) {
+            text += `🏷️ Застосовані знижки: ${lastCalculatedData.discounts.join(', ')}\n`;
+        } else {
+            text += `🏷️ Знижки: відсутні (стандартна вартість)\n`;
+        }
+
+        text += `💰 Загальна вартість: ${lastCalculatedData.total.toLocaleString('uk-UA')} ₴\n`;
+
+        if (lastCalculatedData.installmentPayment) {
+            text += `💳 Можливість розтермінування (5 платежів): по ${lastCalculatedData.installmentPayment.toLocaleString('uk-UA')} ₴/міс\n`;
+            text += `🔗 Посилання на розтермінування: ${lastCalculatedData.installmentLink}\n`;
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+            const msg = document.getElementById('copySuccessMsg');
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 3000);
+        });
+    }
+    
+    window.onload = () => {
+        const allIds = ['ukr', 'math', 'hist', 'opt'];
+        
+        populateStreamSelect('ukr', 'stream-ukr');
+        populateStreamSelect('math', 'stream-math');
+        populateStreamSelect('hist', 'stream-hist');
+        
+        const optSubj = document.getElementById('opt-subject-name').value;
+        populateStreamSelect(optSubj, 'stream-opt');
+
+        allIds.forEach(id => toggleRow(id));
+        calculate();
+    };
+</script>
+
+</body>
+</html>
