@@ -309,7 +309,7 @@
 
     const streamsDB = {
         ukr: [
-            { date: '2026-09-02', label: '2 вересня (А)', duration: 9.000 },
+            { date: '2026-09-02', label: '14 жовтня (D)', duration: 9.000 },
             { date: '2026-09-13', label: '13 вересня (B)', duration: 8.667 },
             { date: '2026-10-14', label: '14 жовтня (C)', duration: 7.625 },
             { date: '2026-11-01', label: '1 листопада (D)', duration: 7.000 },
@@ -464,7 +464,7 @@
         const isFullPayment = document.getElementById('full-payment').checked;
         const isUbd = document.getElementById('ubd-discount').checked;
 
-        // Послідовне застосування знижок: якщо обрано обидві, кожна дає -10% від попередньої суми (0.9 * 0.9 = 0.81)
+        // Збираємо точний незрізаний множник знижки
         let discountMultiplier = 1.0;
         let discountTextList = [];
         if (isFullPayment) {
@@ -501,6 +501,8 @@
 
         let globalGrandTotal = 0;
 
+        // 1. Рахуємо точні суми для кожного предмета без проміжного округлення, 
+        // і лише в кінці округлюємо кожен предмет вниз до десятків
         selectedSubjects.forEach((subject, index) => {
             const monthlyPrice = pricing[subject.tariff][index];
             const exactTotal = monthlyPrice * subject.duration * discountMultiplier;
