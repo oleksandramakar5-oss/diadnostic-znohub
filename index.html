@@ -309,7 +309,7 @@
 
     const streamsDB = {
         ukr: [
-            { date: '2026-09-02', label: '2 вересня (A)', duration: 9.000 },
+            { date: '2026-09-02', label: '14 жовтня (D)', duration: 9.000 },
             { date: '2026-09-13', label: '13 вересня (B)', duration: 8.667 },
             { date: '2026-10-14', label: '14 жовтня (C)', duration: 7.625 },
             { date: '2026-11-01', label: '1 листопада (D)', duration: 7.000 },
@@ -385,7 +385,33 @@
         lit: 'Укр. література'
     };
 
+    // ==========================================
+    // БАЗА ПОСИЛАНЬ НА ОПЛАТУ ЧАСТИНАМИ ЗА ТОЧНОЮ СУМОЮ
+    // ==========================================
     const bankInstallmentLinks = {
+        // Два предмети (як виняток)
+        '17370': 'https://secure.wayforpay.com/button/b14ddcd65b20b',
+        '26280': 'https://secure.wayforpay.com/button/be51d6d589430',
+        '34740': 'https://secure.wayforpay.com/button/b9ae377806714',
+
+        // Три предмети
+        '25380': 'https://secure.wayforpay.com/button/bd4d31f845074',
+        '34290': 'https://secure.wayforpay.com/button/b3d2adedd3b9e',
+        '42750': 'https://secure.wayforpay.com/button/bf0db45993841',
+        '50760': 'https://secure.wayforpay.com/button/bd0a868eafd85',
+
+        // Чотири предмети
+        '32940': 'https://secure.wayforpay.com/button/ba529df09f008',
+        '41850': 'https://secure.wayforpay.com/button/bb5ab97a9f5f5',
+        '50310': 'https://secure.wayforpay.com/button/bf9d1f7dd5b31',
+        '58770': 'https://secure.wayforpay.com/button/b1434a8352324',
+        '65880': 'https://secure.wayforpay.com/button/bba453447dde4',
+
+        // Передоплата / спецсуми
+        '32140': 'https://secure.wayforpay.com/button/b5b2d59314218',
+        '28540': 'https://secure.wayforpay.com/button/b0725f0fa1b17',
+        '17130': 'https://secure.wayforpay.com/button/bde3b423bef6e',
+        '24840': 'https://secure.wayforpay.com/button/baec1c07d3489',
         '32430': 'https://secure.wayforpay.com/button/b60ebfbfc5c0f'
     };
 
@@ -464,7 +490,6 @@
         const isFullPayment = document.getElementById('full-payment').checked;
         const isUbd = document.getElementById('ubd-discount').checked;
 
-        // Збираємо точний незрізаний множник знижки
         let discountMultiplier = 1.0;
         let discountTextList = [];
         if (isFullPayment) {
@@ -501,13 +526,11 @@
 
         let exactGrandTotal = 0;
 
-        // 1. Рахуємо точні суми для предметів БЕЗ проміжного округлення
         selectedSubjects.forEach((subject, index) => {
             const monthlyPrice = pricing[subject.tariff][index];
             const exactSubjectTotal = monthlyPrice * subject.duration * discountMultiplier;
             
             subject.exactPrice = exactSubjectTotal;
-            // Для відображення на екрані поки що показуємо точне значення з двома знаками або округлене за стандартною математикою
             const displayPrice = Math.round(exactSubjectTotal);
             subject.totalPrice = displayPrice;
 
@@ -518,7 +541,6 @@
             exactGrandTotal += exactSubjectTotal;
         });
 
-        // 2. І тільки в самому кінці округлюємо загальну суму вниз до десятків!
         const globalGrandTotal = Math.floor(exactGrandTotal / 10) * 10;
 
         document.getElementById('grandTotalText').innerText = globalGrandTotal.toLocaleString('uk-UA');
@@ -534,7 +556,7 @@
         let installmentInfoText = '';
         let installmentLinkHtml = '';
 
-        if (selectedSubjects.length >= 3) {
+        if (selectedSubjects.length >= 1) {
             const monthlyPayment = Math.round(globalGrandTotal / 5 / 10) * 10;
             
             const linkKey = globalGrandTotal.toString();
@@ -551,7 +573,7 @@
             installmentsContainer.innerHTML = `${installmentInfoText}<br>${installmentLinkHtml}`;
             installmentsContainer.style.color = '#3730a3';
         } else {
-            installmentsContainer.innerHTML = `Розтермінування доступне від 3 предметів`;
+            installmentsContainer.innerHTML = `Оберіть предмети для розрахунку розтермінування`;
             installmentsContainer.style.color = 'var(--text-muted)';
         }
 
@@ -560,8 +582,8 @@
             subjects: selectedSubjects,
             total: globalGrandTotal,
             discounts: discountTextList,
-            installmentPayment: selectedSubjects.length >= 3 ? Math.round(globalGrandTotal / 5 / 10) * 10 : null,
-            installmentLink: selectedSubjects.length >= 3 ? (bankInstallmentLinks[linkKeyForData] || 'Треба просити в каті') : null
+            installmentPayment: selectedSubjects.length >= 1 ? Math.round(globalGrandTotal / 5 / 10) * 10 : null,
+            installmentLink: selectedSubjects.length >= 1 ? (bankInstallmentLinks[linkKeyForData] || 'Треба просити в каті') : null
         };
     }
 
